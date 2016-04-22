@@ -3,7 +3,7 @@
 var passport = require('passport');
 var Blogger = require('./models/blogger').Blogger;
 var Blog = require('./models/blog').Blog;
-var GitHubStrategy = require('passport-github').Strategy;
+var GitHubStrategy = require('passport-github2').Strategy;
 var WordpressStrategy = require('passport-wordpress').Strategy;
 var StackExchangeStrategy = require('passport-stackexchange').Strategy;
 var URI = require('URIjs'); 
@@ -125,18 +125,31 @@ exports.getBloggerFieldsFromAuthenticatedUser = function (passportjsUser) {
     switch(passportjsUser.provider) {
     	case 'github':
             var avatarUrl = new URI(passportjsUser._json.avatar_url).removeSearch("v"); //Remove version from Github, this means the most recent pic is always used.
-            var usersName = passportjsUser.displayName.split(' ');
-							
+             				
             userAsBlogger = new Blogger({
-    			avatarUrl: 		avatarUrl,
-                firstName: 		usersName[0],
-                lastName: 		usersName[1],
+    			avatarUrl: 		avatarUrl,		
                 emailAddress: 	passportjsUser._json.email,
                 blogWebsiteUrl: passportjsUser._json.blog,
                 githubProfile: 	passportjsUser._json.login,
                 bio: 			passportjsUser._json.bio,
                 vanityUrl: 		passportjsUser.username.replace(/\s+/g, '-').toLowerCase()
             });
+            
+            //Check displayName for first/last name combinations
+            if (passportjsUser.displayName != null)
+            {
+	            if (passportjsUser.displayName.contains(' '))
+	            {
+		            var name = passportjsUser.displayName.split(' ');
+		            userAsBlogger.firstName = name[0];
+		            userAsBlogger.lastName = name[name.length - 1];
+	            }
+	            else
+	            {
+		            userAsBlogger.firstName = passportjsUser.displayName;
+	            }
+            }
+            
     		break;
     	case 'Wordpress':
             userAsBlogger = new Blogger({
